@@ -114,6 +114,18 @@
   .botoes .cancelar { background: var(--bg); }
   .excluir { width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; background: none; color: var(--danger); font-weight: 600; }
   .ajuda { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  h1 .idade { display: block; font-size: 15px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .proxima { background: var(--sono-soft); border-radius: 14px; padding: 12px; margin: -4px 0 16px; }
+  .proxima .p1 { font-size: 19px; font-weight: 700; color: var(--sono); }
+  .proxima .p2 { font-size: 14px; color: var(--muted); margin-top: 3px; }
+  .proxima.janela { background: #e3f5ea; }
+  .proxima.janela .p1 { color: #2e9d5b; }
+  .proxima.passou { background: var(--acordado-soft); }
+  .proxima.passou .p1 { color: var(--acordado); }
+  @media (prefers-color-scheme: dark) {
+    .proxima.janela { background: #1c3527; }
+    .proxima.janela .p1 { color: #6fd398; }
+  }
   .semana-btn { width: 100%; padding: 16px; border-radius: 16px; font-size: 18px; font-weight: 600; background: var(--sono-soft); color: var(--sono); margin-bottom: 6px; }
   #dlgSemana { max-height: 92vh; overflow-y: auto; }
   .grafico svg { width: 100%; height: auto; display: block; }
@@ -134,12 +146,16 @@
 </head>
 <body>
 
-<h1>🌙 Sonecas</h1>
+<h1>🌙 Sonecas <small class="idade" id="idade"></small></h1>
 
 <section class="card estado" id="estado">
   <div class="rotulo" id="estadoRotulo"></div>
   <div class="tempo" id="estadoTempo">--</div>
   <div class="desde" id="estadoDesde"></div>
+  <div class="proxima escondido" id="proxima">
+    <div class="p1" id="proxHora"></div>
+    <div class="p2" id="proxInfo"></div>
+  </div>
   <button class="grande" id="btnPrincipal"></button>
   <button class="mamada-btn" id="btnMamada">🍼 Registrar mamada</button>
   <div class="ultima-mamada" id="ultimaMamada"></div>
@@ -292,6 +308,72 @@
 
   const TIPOS = { esq: 'Peito esquerdo', dir: 'Peito direito', mamadeira: 'Mamadeira' };
 
+  // ---------- janela de sono ----------
+  // Bebê e data de nascimento (ano, mês, dia)
+  const BEBE = { nome: 'Emanuel', nascimento: new Date(2026, 8, 16) }; // 16/09/2026
+  // Tempo máximo acordado entre sonecas, por idade (tabela NUK).
+  // "ate" = idade em meses completos abaixo da qual a faixa vale; min/max em minutos.
+  const JANELAS = [
+    { ate: 1, max: 40, txt: 'até 40 min', faixa: '0 a 1 mês' },
+    { ate: 2, min: 40, max: 60, txt: '40 a 60 min', faixa: '1 a 2 meses' },
+    { ate: 3, min: 60, max: 80, txt: '60 a 80 min', faixa: '2 a 3 meses' },
+    { ate: 4, max: 90, txt: 'até 90 min', faixa: '3 a 4 meses' },
+    { ate: 6, max: 105, txt: 'até 1h45', faixa: '4 a 6 meses' },
+    { ate: 8, cerca: 150, txt: 'por volta de 2h30', faixa: '6 a 8 meses' },
+    { ate: 11, min: 120, max: 180, txt: '2h a 3h', faixa: '8 a 10 meses' },
+    { ate: 15, min: 180, max: 240, txt: '3h a 4h', faixa: '12 meses' },
+    { ate: 21, min: 240, max: 360, txt: '4h a 6h', faixa: '18 meses' },
+    { ate: 30, min: 300, max: 420, txt: '5h a 7h', faixa: '2 anos' },
+    { ate: 42, min: 360, max: 480, txt: '6h a 8h', faixa: '3 anos' },
+    { ate: Infinity, min: 360, max: 720, txt: '6h a 12h', faixa: '4 anos' },
+  ];
+  function idadeEm(t) {
+    const n = BEBE.nascimento, d = new Date(t);
+    let meses = (d.getFullYear() - n.getFullYear()) * 12 + d.getMonth() - n.getMonth();
+    if (d.getDate() < n.getDate()) meses--;
+    const ref = new Date(n); ref.setMonth(n.getMonth() + meses);
+    return { meses, dias: Math.floor((inicioDoDia(t) - inicioDoDia(ref.getTime())) / 86400000) };
+  }
+  function textoIdade() {
+    const { meses, dias } = idadeEm(Date.now());
+    const partes = [];
+    if (meses) partes.push(meses + (meses === 1 ? ' mês' : ' meses'));
+    if (dias || !meses) partes.push(dias + (dias === 1 ? ' dia' : ' dias'));
+    return BEBE.nome + ' · ' + partes.join(' e ');
+  }
+  const janelaPara = t => JANELAS.find(j => idadeEm(t).meses < j.ate);
+
+  function desenharProxima(acordouEm) {
+    const box = $('proxima');
+    if (!acordouEm) { box.classList.add('escondido'); return; }
+    const j = janelaPara(acordouEm), agora = Date.now(), min = 60000;
+    let ini, fim, txt;
+    if (j.cerca) {
+      const alvo = acordouEm + j.cerca * min;
+      ini = alvo - 15 * min; fim = alvo + 15 * min;
+      txt = 'por volta das ' + hora(alvo);
+    } else if (j.min) {
+      ini = acordouEm + j.min * min; fim = acordouEm + j.max * min;
+      txt = 'entre ' + hora(ini) + ' e ' + hora(fim);
+    } else {
+      fim = acordouEm + j.max * min; ini = fim - 10 * min;
+      txt = 'até as ' + hora(fim);
+    }
+    box.classList.remove('escondido', 'janela', 'passou');
+    if (agora > fim) {
+      box.classList.add('passou');
+      $('proxHora').textContent = '⏰ Passou da janela de sono';
+      $('proxInfo').textContent = `Era para dormir ${txt}. Janela para ${j.faixa}: ${j.txt}.`;
+    } else if (agora >= ini) {
+      box.classList.add('janela');
+      $('proxHora').textContent = '🟢 Hora de dormir: ' + txt;
+      $('proxInfo').textContent = `Janela de sono para ${j.faixa}: ${j.txt}.`;
+    } else {
+      $('proxHora').textContent = '🛏️ Próxima soneca ' + txt;
+      $('proxInfo').textContent = `Janela de sono para ${j.faixa}: ${j.txt}.`;
+    }
+  }
+
   // ---------- tela ----------
   let diaVisto = inicioDoDia(Date.now());
 
@@ -299,11 +381,13 @@
     const ativa = sonecaAtiva();
     const agora = Date.now();
     const est = $('estado');
+    $('idade').textContent = textoIdade();
     if (ativa) {
       est.className = 'card estado dormindo';
       $('estadoRotulo').textContent = '😴 Dormindo há';
       $('estadoTempo').textContent = duracao(agora - ativa.inicio, true);
       $('estadoDesde').textContent = 'desde ' + hora(ativa.inicio);
+      desenharProxima(null);
       $('btnPrincipal').className = 'grande acordar';
       $('btnPrincipal').textContent = '☀️ Acordou';
     } else {
@@ -313,7 +397,9 @@
         $('estadoRotulo').textContent = '👀 Acordado há';
         $('estadoTempo').textContent = duracao(agora - ultimas[0].fim, true);
         $('estadoDesde').textContent = 'acordou às ' + hora(ultimas[0].fim);
+        desenharProxima(ultimas[0].fim);
       } else {
+        desenharProxima(null);
         $('estadoRotulo').textContent = 'Nenhuma soneca registrada ainda';
         $('estadoTempo').textContent = '—';
         $('estadoDesde').textContent = 'Toque no botão quando o bebê dormir';
