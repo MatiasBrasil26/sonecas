@@ -114,6 +114,21 @@
   .botoes .cancelar { background: var(--bg); }
   .excluir { width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; background: none; color: var(--danger); font-weight: 600; }
   .ajuda { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  .semana-btn { width: 100%; padding: 16px; border-radius: 16px; font-size: 18px; font-weight: 600; background: var(--sono-soft); color: var(--sono); margin-bottom: 6px; }
+  #dlgSemana { max-height: 92vh; overflow-y: auto; }
+  .grafico svg { width: 100%; height: auto; display: block; }
+  .grafico .barra { fill: var(--sono); }
+  .grafico .barra.hoje { fill: var(--acordado); }
+  .grafico .grade { stroke: var(--line); stroke-width: 1; }
+  .grafico .txt { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .grafico .val { fill: var(--text); font-size: 11px; font-weight: 700; font-family: inherit; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .stats div { background: var(--bg); border-radius: 14px; padding: 12px; }
+  .stats b { display: block; font-size: 20px; }
+  .stats span { color: var(--muted); font-size: 13px; }
+  .stats small { display: block; font-size: 13px; margin-top: 4px; }
+  .stats .mais { color: #2e9d5b; }
+  .stats .menos { color: var(--acordado); }
   .escondido { display: none !important; }
 </style>
 </head>
@@ -149,7 +164,26 @@
   </div>
 </section>
 
+<button class="semana-btn" id="btnSemana">📊 Relatório da semana</button>
+
 <div class="rodape"><button id="btnBackup">Cópia de segurança</button></div>
+
+<!-- Relatório da semana -->
+<dialog id="dlgSemana">
+  <div class="dia-nav">
+    <button id="semAnterior" aria-label="Semana anterior">‹</button>
+    <div class="titulo"><h2 id="semTitulo"></h2><small id="semData"></small></div>
+    <button id="semSeguinte" aria-label="Semana seguinte">›</button>
+  </div>
+  <p class="ajuda" style="margin:0 0 6px">Horas de sono por dia</p>
+  <div class="grafico" id="semGrafico"></div>
+  <div class="vazio escondido" id="semVazio">Nenhum registro nesta semana.</div>
+  <div class="stats" id="semStats"></div>
+  <div class="botoes">
+    <button type="button" class="cancelar" data-fechar>Fechar</button>
+    <button type="button" class="ok" id="semCompartilhar">Compartilhar</button>
+  </div>
+</dialog>
 
 <!-- Editar soneca -->
 <dialog id="dlgSoneca">
@@ -483,6 +517,196 @@
     } catch (err) {
       alert('Este arquivo não é uma cópia válida do app Sonecas.');
     }
+  };
+
+  // ---------- relatório da semana ----------
+  const CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const dm = t => { const d = new Date(t); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1); };
+  const curto = ms => { const m = Math.round(ms / 60000), h = Math.floor(m / 60); return h ? h + 'h' + pad(m % 60) : (m % 60) + 'm'; };
+  function inicioSemana(t) { // segunda-feira
+    const d = new Date(inicioDoDia(t));
+    d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+    return d.getTime();
+  }
+  let semanaVista = inicioSemana(Date.now());
+
+  function calcSemana(ini) {
+    const agora = Date.now(), hoje = inicioDoDia(agora);
+    const dias = [];
+    for (let i = 0; i < 7; i++) {
+      const di = somaDias(ini, i), df = somaDias(ini, i + 1);
+      const s = dados.sonecas.filter(x => x.inicio >= di && x.inicio < df);
+      const m = dados.mamadas.filter(x => x.em >= di && x.em < df);
+      dias.push({
+        ini: di, hoje: di === hoje, futuro: di > hoje,
+        sono: s.reduce((a, x) => a + ((x.fim || agora) - x.inicio), 0),
+        nS: s.length, nM: m.length, comDados: s.length + m.length > 0,
+        maior: s.filter(x => x.fim).reduce((a, x) => Math.max(a, x.fim - x.inicio), 0),
+        ml: m.reduce((a, x) => a + (x.ml || 0), 0),
+        nMamadeira: m.filter(x => x.tipo === 'mamadeira').length,
+      });
+    }
+    // o dia de hoje ainda está pela metade: só entra nas médias se for o único com registro
+    let ativos = dias.filter(d => d.comDados && !d.hoje);
+    if (!ativos.length) ativos = dias.filter(d => d.comDados);
+    const n = ativos.length;
+    const soma = k => ativos.reduce((a, d) => a + d[k], 0);
+    let maior = null;
+    dias.forEach(d => { if (d.maior && (!maior || d.maior > maior.dur)) maior = { dur: d.maior, dia: d.ini }; });
+    return {
+      dias, n, maior,
+      sonoMedio: n ? soma('sono') / n : 0,
+      sonecasMedia: n ? soma('nS') / n : 0,
+      mamadasMedia: n ? soma('nM') / n : 0,
+      ml: soma('ml'), nMamadeira: soma('nMamadeira'),
+    };
+  }
+  const um = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+
+  function comparacao(r) {
+    const ant = calcSemana(somaDias(semanaVista, -7));
+    if (!r.n || !ant.n) return null;
+    const dif = r.sonoMedio - ant.sonoMedio;
+    if (Math.abs(dif) < 5 * 60000) return { cls: '', txt: 'igual à semana anterior' };
+    return dif > 0
+      ? { cls: 'mais', txt: '↑ ' + duracao(dif) + ' a mais que a semana anterior' }
+      : { cls: 'menos', txt: '↓ ' + duracao(-dif) + ' a menos que a semana anterior' };
+  }
+
+  function graficoSVG(r) {
+    const W = 350, H = 190, topo = 22, base = 160, esq = 26;
+    const maxH = Math.max(4, Math.ceil(Math.max(...r.dias.map(d => d.sono)) / 3600000));
+    const passo = maxH <= 8 ? 2 : maxH <= 16 ? 4 : 6;
+    const topoH = Math.ceil(maxH / passo) * passo;
+    const y = h => base - (h / topoH) * (base - topo);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Horas de sono por dia">`;
+    for (let h = 0; h <= topoH; h += passo) {
+      s += `<line class="grade" x1="${esq}" x2="${W}" y1="${y(h)}" y2="${y(h)}"/><text class="txt" x="${esq - 4}" y="${y(h) + 4}" text-anchor="end">${h}h</text>`;
+    }
+    const larg = (W - esq) / 7, bw = larg * 0.58;
+    r.dias.forEach((d, i) => {
+      const cx = esq + larg * i + larg / 2, alt = base - y(d.sono / 3600000);
+      if (d.sono > 0) {
+        s += `<rect class="barra${d.hoje ? ' hoje' : ''}" x="${cx - bw / 2}" y="${base - alt}" width="${bw}" height="${alt}" rx="5"/>`;
+        s += `<text class="val" x="${cx}" y="${base - alt - 5}" text-anchor="middle">${curto(d.sono)}</text>`;
+      }
+      s += `<text class="txt" x="${cx}" y="${base + 15}" text-anchor="middle"${d.hoje ? ' style="font-weight:700"' : ''}>${CURTOS[new Date(d.ini).getDay()]}</text>`;
+      s += `<text class="txt" x="${cx}" y="${base + 28}" text-anchor="middle">${dm(d.ini)}</text>`;
+    });
+    return s + '</svg>';
+  }
+
+  function itensStats(r) {
+    const c = comparacao(r);
+    const lista = [
+      { v: duracao(r.sonoMedio), l: 'de sono por dia (média)', extra: c },
+      { v: um(r.sonecasMedia), l: 'sonecas por dia (média)' },
+      { v: r.maior ? duracao(r.maior.dur) : '—', l: 'soneca mais longa' + (r.maior ? ' (' + CURTOS[new Date(r.maior.dia).getDay()] + ')' : '') },
+      { v: um(r.mamadasMedia), l: 'mamadas por dia (média)' },
+    ];
+    if (r.nMamadeira) lista.push({ v: r.ml + ' ml', l: `de mamadeira na semana (${r.nMamadeira}x)` });
+    lista.push({ v: r.n + ' dias', l: r.dias.some(d => d.hoje && d.comDados) && r.n > 0 && !r.dias.every(d => !d.comDados || d.hoje) ? 'completos (hoje fora da média)' : 'com registro' });
+    return lista;
+  }
+
+  function desenharSemana() {
+    const r = calcSemana(semanaVista), atual = inicioSemana(Date.now());
+    $('semTitulo').textContent = semanaVista === atual ? 'Esta semana' : semanaVista === somaDias(atual, -7) ? 'Semana passada' : 'Semana';
+    $('semData').textContent = dm(semanaVista) + ' a ' + dataCurta(somaDias(semanaVista, 6));
+    $('semSeguinte').disabled = semanaVista >= atual;
+    $('semGrafico').innerHTML = graficoSVG(r);
+    $('semVazio').classList.toggle('escondido', r.n > 0);
+    $('semStats').classList.toggle('escondido', r.n === 0);
+    $('semCompartilhar').disabled = r.n === 0;
+    $('semStats').innerHTML = '';
+    for (const it of itensStats(r)) {
+      const div = document.createElement('div');
+      div.innerHTML = '<b></b><span></span>';
+      div.querySelector('b').textContent = it.v;
+      div.querySelector('span').textContent = it.l;
+      if (it.extra) {
+        const sm = document.createElement('small');
+        sm.className = it.extra.cls;
+        sm.textContent = it.extra.txt;
+        div.appendChild(sm);
+      }
+      $('semStats').appendChild(div);
+    }
+  }
+  $('btnSemana').onclick = () => { semanaVista = inicioSemana(Date.now()); desenharSemana(); $('dlgSemana').showModal(); };
+  $('semAnterior').onclick = () => { semanaVista = somaDias(semanaVista, -7); desenharSemana(); };
+  $('semSeguinte').onclick = () => { semanaVista = somaDias(semanaVista, 7); desenharSemana(); };
+
+  // imagem do relatório para mandar no WhatsApp
+  function imagemSemana() {
+    const r = calcSemana(semanaVista);
+    const W = 1080, H = 1440, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const F = (peso, tam) => `${peso} ${tam}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+    g.fillStyle = '#f6f4fb'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#25213b'; g.font = F(700, 64); g.fillText('🌙 Sonecas da semana', 70, 130);
+    g.fillStyle = '#6f6a86'; g.font = F(400, 38);
+    g.fillText(dataCurta(semanaVista) + ' a ' + dataCurta(somaDias(semanaVista, 6)), 70, 190);
+
+    // gráfico
+    const esq = 130, dir = W - 70, topo = 290, base = 720;
+    const maxH = Math.max(4, Math.ceil(Math.max(...r.dias.map(d => d.sono)) / 3600000));
+    const passo = maxH <= 8 ? 2 : maxH <= 16 ? 4 : 6, topoH = Math.ceil(maxH / passo) * passo;
+    const y = h => base - (h / topoH) * (base - topo);
+    g.font = F(400, 30); g.textAlign = 'right';
+    for (let h = 0; h <= topoH; h += passo) {
+      g.strokeStyle = '#e6e2f0'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(esq, y(h)); g.lineTo(dir, y(h)); g.stroke();
+      g.fillStyle = '#6f6a86'; g.fillText(h + 'h', esq - 14, y(h) + 10);
+    }
+    const larg = (dir - esq) / 7, bw = larg * 0.6;
+    g.textAlign = 'center';
+    r.dias.forEach((d, i) => {
+      const cx = esq + larg * i + larg / 2, alt = base - y(d.sono / 3600000);
+      if (d.sono > 0) {
+        g.fillStyle = d.hoje ? '#e0902f' : '#5b4fc4';
+        g.beginPath();
+        if (g.roundRect) g.roundRect(cx - bw / 2, base - alt, bw, alt, [14, 14, 0, 0]); else g.rect(cx - bw / 2, base - alt, bw, alt);
+        g.fill();
+        g.fillStyle = '#25213b'; g.font = F(700, 30); g.fillText(curto(d.sono), cx, base - alt - 14);
+      }
+      g.fillStyle = '#6f6a86'; g.font = F(600, 30); g.fillText(CURTOS[new Date(d.ini).getDay()], cx, base + 44);
+      g.font = F(400, 26); g.fillText(dm(d.ini), cx, base + 80);
+    });
+
+    // números
+    g.textAlign = 'left';
+    const itens = itensStats(r);
+    const cw = (W - 140 - 30) / 2, ch = 150;
+    itens.forEach((it, i) => {
+      const x = 70 + (i % 2) * (cw + 30), yy = 860 + Math.floor(i / 2) * (ch + 20);
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      if (g.roundRect) g.roundRect(x, yy, cw, ch, 24); else g.rect(x, yy, cw, ch);
+      g.fill();
+      g.fillStyle = '#25213b'; g.font = F(700, 48); g.fillText(it.v, x + 30, yy + 68);
+      g.fillStyle = '#6f6a86'; g.font = F(400, 26); g.fillText(it.l, x + 30, yy + 108);
+      if (it.extra) {
+        g.fillStyle = it.extra.cls === 'mais' ? '#2e9d5b' : it.extra.cls === 'menos' ? '#c77a1d' : '#6f6a86';
+        g.font = F(400, 22); g.fillText(it.extra.txt, x + 30, yy + 138);
+      }
+    });
+    return cv;
+  }
+
+  $('semCompartilhar').onclick = async () => {
+    const url = imagemSemana().toDataURL('image/png');
+    const bin = atob(url.split(',')[1]), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const nome = 'sonecas-semana-' + dataCurta(semanaVista).split('/').reverse().join('-') + '.png';
+    const arquivo = new File([bytes], nome, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+      try { await navigator.share({ files: [arquivo], title: 'Sonecas da semana' }); } catch (e) {}
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = url; a.download = nome; a.click();
   };
 
   // ---------- atualização ----------

@@ -25,6 +25,8 @@ Pronto: o ícone da lua aparece na tela de início e o app abre em tela cheia, c
 - **Esqueceu de apertar?** Use "+ Soneca esquecida" ou "+ Mamada esquecida".
 - **Dias anteriores**: use as setas ‹ › ao lado de "Hoje".
 - No topo da lista: total de sono do dia, número de sonecas e de mamadas.
+- **📊 Relatório da semana** (de segunda a domingo): gráfico com as horas de sono de cada dia, médias de sono, sonecas e mamadas por dia, soneca mais longa, total de ml de mamadeira e comparação com a semana anterior. As setas ‹ › mostram as semanas passadas. O dia de hoje aparece no gráfico, mas fica fora das médias até terminar.
+  O botão **Compartilhar** gera uma imagem do relatório para mandar no WhatsApp ou mostrar ao pediatra.
 
 ## Onde ficam os dados
 
