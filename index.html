@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sonecas</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sonecas">
+<meta name="theme-color" content="#2a2550">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #f6f4fb;
+    --card: #ffffff;
+    --text: #25213b;
+    --muted: #6f6a86;
+    --line: #e6e2f0;
+    --sono: #5b4fc4;
+    --sono-soft: #ece9fb;
+    --acordado: #e0902f;
+    --acordado-soft: #fdf1e1;
+    --mama: #d0567a;
+    --mama-soft: #fbe8ee;
+    --danger: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14121f;
+      --card: #1f1c30;
+      --text: #ece9f7;
+      --muted: #9a94b5;
+      --line: #2f2b45;
+      --sono: #9d93ff;
+      --sono-soft: #2a2550;
+      --acordado: #f0ad5a;
+      --acordado-soft: #3a2c1c;
+      --mama: #f08aa8;
+      --mama-soft: #3c2230;
+      --danger: #ff7b6b;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-size: 17px;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px);
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 28px; margin: 4px 0 14px; }
+  h2 { font-size: 20px; margin: 0; }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+
+  .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .estado { text-align: center; }
+  .estado .rotulo { color: var(--muted); font-size: 15px; }
+  .estado .tempo { font-size: 46px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 4px 0; }
+  .estado .desde { color: var(--muted); font-size: 15px; margin-bottom: 16px; }
+  .estado.dormindo .tempo { color: var(--sono); }
+  .estado.acordado .tempo { color: var(--acordado); }
+
+  .grande { width: 100%; padding: 20px; border-radius: 16px; font-size: 21px; font-weight: 700; color: #fff; }
+  .grande.dormir { background: var(--sono); }
+  .grande.acordar { background: var(--acordado); }
+  .mamada-btn { width: 100%; padding: 16px; border-radius: 16px; font-size: 18px; font-weight: 600; background: var(--mama-soft); color: var(--mama); margin-top: 10px; }
+  .ultima-mamada { color: var(--muted); font-size: 15px; margin-top: 10px; text-align: center; }
+
+  .dia-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .dia-nav button { background: var(--sono-soft); color: var(--sono); width: 44px; height: 44px; border-radius: 12px; font-size: 22px; font-weight: 700; }
+  .dia-nav button:disabled { opacity: .3; }
+  .dia-nav .titulo { text-align: center; }
+  .dia-nav .titulo small { display: block; color: var(--muted); font-size: 14px; }
+
+  .resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .resumo div { background: var(--bg); border-radius: 14px; padding: 10px 6px; text-align: center; }
+  .resumo b { display: block; font-size: 18px; white-space: nowrap; }
+  .resumo span { color: var(--muted); font-size: 13px; }
+
+  .lista { list-style: none; margin: 0; padding: 0; }
+  .lista li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 4px; border-top: 1px solid var(--line); cursor: pointer; }
+  .lista li:first-child { border-top: 0; }
+  .lista .ic { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; }
+  .lista .ic.s { background: var(--sono-soft); }
+  .lista .ic.m { background: var(--mama-soft); }
+  .lista .info { flex: 1; min-width: 0; }
+  .lista .linha1 { font-weight: 600; }
+  .lista .linha2 { color: var(--muted); font-size: 15px; }
+  .lista .obs { color: var(--muted); font-size: 15px; font-style: italic; margin-top: 2px; overflow-wrap: anywhere; }
+  .vazio { color: var(--muted); text-align: center; padding: 16px 0 6px; }
+
+  .acoes { display: flex; gap: 8px; margin-top: 14px; }
+  .acoes button { flex: 1; padding: 12px; border-radius: 12px; background: var(--bg); color: var(--text); font-size: 15px; font-weight: 600; }
+  .rodape { display: flex; justify-content: center; margin-top: 6px; }
+  .rodape button { background: none; color: var(--muted); font-size: 15px; padding: 10px; text-decoration: underline; }
+
+  dialog { border: 0; border-radius: 20px; padding: 20px; width: min(92vw, 440px); background: var(--card); color: var(--text); }
+  dialog::backdrop { background: rgba(10, 8, 20, .55); }
+  dialog h2 { margin-bottom: 14px; }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
+  input, textarea, select { width: 100%; font: inherit; font-size: 17px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  textarea { min-height: 70px; resize: vertical; }
+  .opcoes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .opcoes button { padding: 12px 4px; border-radius: 12px; background: var(--bg); font-size: 15px; font-weight: 600; border: 2px solid transparent; }
+  .opcoes button.sel { border-color: var(--mama); color: var(--mama); background: var(--mama-soft); }
+  .dois { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .botoes { display: flex; gap: 8px; margin-top: 18px; }
+  .botoes button { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; }
+  .botoes .ok { background: var(--sono); color: #fff; }
+  .botoes .cancelar { background: var(--bg); }
+  .excluir { width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; background: none; color: var(--danger); font-weight: 600; }
+  .ajuda { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  .escondido { display: none !important; }
+</style>
+</head>
+<body>
+
+<h1>🌙 Sonecas</h1>
+
+<section class="card estado" id="estado">
+  <div class="rotulo" id="estadoRotulo"></div>
+  <div class="tempo" id="estadoTempo">--</div>
+  <div class="desde" id="estadoDesde"></div>
+  <button class="grande" id="btnPrincipal"></button>
+  <button class="mamada-btn" id="btnMamada">🍼 Registrar mamada</button>
+  <div class="ultima-mamada" id="ultimaMamada"></div>
+</section>
+
+<section class="card">
+  <div class="dia-nav">
+    <button id="diaAnterior" aria-label="Dia anterior">‹</button>
+    <div class="titulo"><h2 id="diaTitulo"></h2><small id="diaData"></small></div>
+    <button id="diaSeguinte" aria-label="Dia seguinte">›</button>
+  </div>
+  <div class="resumo">
+    <div><b id="rTotal">0min</b><span>de sono</span></div>
+    <div><b id="rSonecas">0</b><span>sonecas</span></div>
+    <div><b id="rMamadas">0</b><span>mamadas</span></div>
+  </div>
+  <ul class="lista" id="lista"></ul>
+  <div class="vazio escondido" id="vazio">Nada registrado neste dia.</div>
+  <div class="acoes">
+    <button id="addSoneca">+ Soneca esquecida</button>
+    <button id="addMamada">+ Mamada esquecida</button>
+  </div>
+</section>
+
+<div class="rodape"><button id="btnBackup">Cópia de segurança</button></div>
+
+<!-- Editar soneca -->
+<dialog id="dlgSoneca">
+  <form method="dialog" id="formSoneca">
+    <h2 id="dlgSonecaTitulo">Soneca</h2>
+    <label for="sInicio">Começou a dormir</label>
+    <input type="datetime-local" id="sInicio" required>
+    <label for="sFim">Acordou</label>
+    <input type="datetime-local" id="sFim">
+    <p class="ajuda" id="sFimAjuda">Deixe em branco se ainda está dormindo.</p>
+    <label for="sObs">Observações</label>
+    <textarea id="sObs" placeholder="Ex.: dormiu no colo, acordou chorando…"></textarea>
+    <div class="botoes">
+      <button type="button" class="cancelar" data-fechar>Cancelar</button>
+      <button type="submit" class="ok">Salvar</button>
+    </div>
+    <button type="button" class="excluir" id="sExcluir">Excluir esta soneca</button>
+  </form>
+</dialog>
+
+<!-- Editar mamada -->
+<dialog id="dlgMamada">
+  <form method="dialog" id="formMamada">
+    <h2 id="dlgMamadaTitulo">Mamada</h2>
+    <label>Tipo</label>
+    <div class="opcoes" id="mTipo">
+      <button type="button" data-tipo="esq">Peito esq.</button>
+      <button type="button" data-tipo="dir">Peito dir.</button>
+      <button type="button" data-tipo="mamadeira">Mamadeira</button>
+    </div>
+    <label for="mHora">Horário</label>
+    <input type="datetime-local" id="mHora" required>
+    <div class="dois">
+      <div><label for="mMin">Duração (min)</label><input type="number" inputmode="numeric" min="0" id="mMin" placeholder="opcional"></div>
+      <div id="mMlBox"><label for="mMl">Quantidade (ml)</label><input type="number" inputmode="numeric" min="0" id="mMl" placeholder="opcional"></div>
+    </div>
+    <label for="mObs">Observações</label>
+    <textarea id="mObs" placeholder="Opcional"></textarea>
+    <div class="botoes">
+      <button type="button" class="cancelar" data-fechar>Cancelar</button>
+      <button type="submit" class="ok">Salvar</button>
+    </div>
+    <button type="button" class="excluir" id="mExcluir">Excluir esta mamada</button>
+  </form>
+</dialog>
+
+<!-- Backup -->
+<dialog id="dlgBackup">
+  <h2>Cópia de segurança</h2>
+  <p class="ajuda">Os registros ficam guardados só neste iPhone. De vez em quando, salve uma cópia (por exemplo, no app Arquivos ou mande por WhatsApp para você mesma).</p>
+  <div class="botoes" style="flex-direction:column">
+    <button type="button" class="ok" id="bExportar">Salvar cópia</button>
+    <button type="button" class="cancelar" id="bImportar">Restaurar de uma cópia</button>
+    <button type="button" class="cancelar" data-fechar>Fechar</button>
+  </div>
+  <input type="file" id="bArquivo" accept=".json,application/json" class="escondido">
+</dialog>
+
+<script>
+(() => {
+  const CHAVE = 'sonecas-dados-v1';
+  const $ = id => document.getElementById(id);
+
+  // ---------- dados ----------
+  function carregar() {
+    try {
+      const d = JSON.parse(localStorage.getItem(CHAVE));
+      if (d && Array.isArray(d.sonecas) && Array.isArray(d.mamadas)) return d;
+    } catch (e) {}
+    return { sonecas: [], mamadas: [] };
+  }
+  let dados = carregar();
+  function salvar() {
+    try { localStorage.setItem(CHAVE, JSON.stringify(dados)); }
+    catch (e) { alert('Não foi possível salvar. Verifique se o Safari não está em navegação privada.'); }
+    desenhar();
+  }
+  const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const sonecaAtiva = () => dados.sonecas.find(s => !s.fim);
+
+  // ---------- datas ----------
+  const pad = n => String(n).padStart(2, '0');
+  const hora = t => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  const inicioDoDia = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const somaDias = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); return d.getTime(); };
+  const paraInput = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const doInput = v => v ? new Date(v).getTime() : null;
+
+  function duracao(ms, comSegundos) {
+    if (ms < 0) ms = 0;
+    const totalS = Math.floor(ms / 1000);
+    const h = Math.floor(totalS / 3600), m = Math.floor((totalS % 3600) / 60), s = totalS % 60;
+    if (comSegundos) return (h ? h + ':' + pad(m) : m) + ':' + pad(s);
+    if (h) return h + 'h' + (m ? ' ' + pad(m) + 'min' : '');
+    return m + 'min';
+  }
+  const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  function nomeDia(t) {
+    const hoje = inicioDoDia(Date.now());
+    if (t === hoje) return 'Hoje';
+    if (t === somaDias(hoje, -1)) return 'Ontem';
+    const d = new Date(t);
+    return DIAS[d.getDay()][0].toUpperCase() + DIAS[d.getDay()].slice(1);
+  }
+  const dataCurta = t => { const d = new Date(t); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); };
+
+  const TIPOS = { esq: 'Peito esquerdo', dir: 'Peito direito', mamadeira: 'Mamadeira' };
+
+  // ---------- tela ----------
+  let diaVisto = inicioDoDia(Date.now());
+
+  function desenharEstado() {
+    const ativa = sonecaAtiva();
+    const agora = Date.now();
+    const est = $('estado');
+    if (ativa) {
+      est.className = 'card estado dormindo';
+      $('estadoRotulo').textContent = '😴 Dormindo há';
+      $('estadoTempo').textContent = duracao(agora - ativa.inicio, true);
+      $('estadoDesde').textContent = 'desde ' + hora(ativa.inicio);
+      $('btnPrincipal').className = 'grande acordar';
+      $('btnPrincipal').textContent = '☀️ Acordou';
+    } else {
+      const ultimas = dados.sonecas.filter(s => s.fim).sort((a, b) => b.fim - a.fim);
+      est.className = 'card estado acordado';
+      if (ultimas.length) {
+        $('estadoRotulo').textContent = '👀 Acordado há';
+        $('estadoTempo').textContent = duracao(agora - ultimas[0].fim, true);
+        $('estadoDesde').textContent = 'acordou às ' + hora(ultimas[0].fim);
+      } else {
+        $('estadoRotulo').textContent = 'Nenhuma soneca registrada ainda';
+        $('estadoTempo').textContent = '—';
+        $('estadoDesde').textContent = 'Toque no botão quando o bebê dormir';
+      }
+      $('btnPrincipal').className = 'grande dormir';
+      $('btnPrincipal').textContent = '🌙 Dormiu';
+    }
+    const um = [...dados.mamadas].sort((a, b) => b.em - a.em)[0];
+    $('ultimaMamada').textContent = um
+      ? `Última mamada: ${hora(um.em)} (há ${duracao(agora - um.em)})`
+      : '';
+  }
+
+  function desenharDia() {
+    const ini = diaVisto, fim = somaDias(diaVisto, 1), agora = Date.now();
+    $('diaTitulo').textContent = nomeDia(ini);
+    $('diaData').textContent = dataCurta(ini);
+    $('diaSeguinte').disabled = ini >= inicioDoDia(agora);
+
+    const sonecas = dados.sonecas.filter(s => s.inicio >= ini && s.inicio < fim);
+    const mamadas = dados.mamadas.filter(m => m.em >= ini && m.em < fim);
+    const total = sonecas.reduce((acc, s) => acc + ((s.fim || agora) - s.inicio), 0);
+    $('rTotal').textContent = duracao(total);
+    $('rSonecas').textContent = sonecas.length;
+    $('rMamadas').textContent = mamadas.length;
+
+    const itens = [
+      ...sonecas.map(s => ({ t: s.inicio, tipo: 's', r: s })),
+      ...mamadas.map(m => ({ t: m.em, tipo: 'm', r: m })),
+    ].sort((a, b) => b.t - a.t);
+
+    const ul = $('lista');
+    ul.innerHTML = '';
+    $('vazio').classList.toggle('escondido', itens.length > 0);
+    for (const it of itens) {
+      const li = document.createElement('li');
+      const r = it.r;
+      let l1, l2;
+      if (it.tipo === 's') {
+        l1 = r.fim ? `Soneca de ${duracao(r.fim - r.inicio)}` : 'Dormindo agora…';
+        l2 = r.fim ? `${hora(r.inicio)} – ${hora(r.fim)}` : `desde ${hora(r.inicio)} (${duracao(agora - r.inicio)})`;
+        if (r.fim && inicioDoDia(r.fim) !== inicioDoDia(r.inicio)) l2 += ' do dia seguinte';
+      } else {
+        l1 = 'Mamada · ' + (TIPOS[r.tipo] || 'Mamada');
+        const extra = [];
+        if (r.min) extra.push(r.min + ' min');
+        if (r.ml) extra.push(r.ml + ' ml');
+        l2 = hora(r.em) + (extra.length ? ' · ' + extra.join(' · ') : '');
+      }
+      li.innerHTML = `<div class="ic ${it.tipo}">${it.tipo === 's' ? '😴' : '🍼'}</div>
+        <div class="info"><div class="linha1"></div><div class="linha2"></div>${r.obs ? '<div class="obs"></div>' : ''}</div>`;
+      li.querySelector('.linha1').textContent = l1;
+      li.querySelector('.linha2').textContent = l2;
+      if (r.obs) li.querySelector('.obs').textContent = r.obs;
+      li.onclick = () => it.tipo === 's' ? abrirSoneca(r) : abrirMamada(r);
+      ul.appendChild(li);
+    }
+  }
+
+  function desenhar() { desenharEstado(); desenharDia(); }
+
+  // ---------- ações principais ----------
+  $('btnPrincipal').onclick = () => {
+    const ativa = sonecaAtiva();
+    if (ativa) ativa.fim = Date.now();
+    else dados.sonecas.push({ id: novoId(), inicio: Date.now(), fim: null, obs: '' });
+    diaVisto = inicioDoDia(Date.now());
+    salvar();
+  };
+
+  $('diaAnterior').onclick = () => { diaVisto = somaDias(diaVisto, -1); desenharDia(); };
+  $('diaSeguinte').onclick = () => { diaVisto = somaDias(diaVisto, 1); desenharDia(); };
+
+  // fecha diálogos
+  document.querySelectorAll('[data-fechar]').forEach(b => b.onclick = () => b.closest('dialog').close());
+
+  // ---------- soneca ----------
+  let sonecaEditando = null;
+  function abrirSoneca(s) {
+    sonecaEditando = s;
+    const nova = !s;
+    $('dlgSonecaTitulo').textContent = nova ? 'Adicionar soneca' : 'Soneca';
+    const base = nova ? padraoNoDia() : s.inicio;
+    $('sInicio').value = paraInput(base);
+    $('sFim').value = nova ? paraInput(base + 30 * 60000) : (s.fim ? paraInput(s.fim) : '');
+    $('sObs').value = nova ? '' : (s.obs || '');
+    $('sExcluir').classList.toggle('escondido', nova);
+    $('dlgSoneca').showModal();
+  }
+  $('formSoneca').onsubmit = e => {
+    e.preventDefault();
+    const inicio = doInput($('sInicio').value), fim = doInput($('sFim').value);
+    if (!inicio) return;
+    if (fim && fim <= inicio) { alert('O horário em que acordou precisa ser depois do horário em que dormiu.'); return; }
+    if (!fim) {
+      const outra = sonecaAtiva();
+      if (outra && outra !== sonecaEditando) { alert('Já existe uma soneca em andamento. Preencha o horário em que acordou.'); return; }
+    }
+    if (sonecaEditando) Object.assign(sonecaEditando, { inicio, fim, obs: $('sObs').value.trim() });
+    else dados.sonecas.push({ id: novoId(), inicio, fim, obs: $('sObs').value.trim() });
+    diaVisto = inicioDoDia(inicio);
+    $('dlgSoneca').close();
+    salvar();
+  };
+  $('sExcluir').onclick = () => {
+    if (!confirm('Excluir esta soneca?')) return;
+    dados.sonecas = dados.sonecas.filter(s => s !== sonecaEditando);
+    $('dlgSoneca').close();
+    salvar();
+  };
+  $('addSoneca').onclick = () => abrirSoneca(null);
+
+  // horário sugerido ao adicionar algo esquecido: agora (se hoje) ou 12:00 do dia visto
+  function padraoNoDia() {
+    const hoje = inicioDoDia(Date.now());
+    if (diaVisto === hoje) return Date.now() - 30 * 60000;
+    return diaVisto + 12 * 3600000;
+  }
+
+  // ---------- mamada ----------
+  let mamadaEditando = null, tipoSel = null;
+  function marcarTipo(t) {
+    tipoSel = t;
+    document.querySelectorAll('#mTipo button').forEach(b => b.classList.toggle('sel', b.dataset.tipo === t));
+    $('mMlBox').style.visibility = t === 'mamadeira' ? 'visible' : 'hidden';
+  }
+  document.querySelectorAll('#mTipo button').forEach(b => b.onclick = () => marcarTipo(b.dataset.tipo));
+
+  function abrirMamada(m, agora) {
+    mamadaEditando = m;
+    const nova = !m;
+    $('dlgMamadaTitulo').textContent = nova ? (agora ? 'Mamada agora' : 'Adicionar mamada') : 'Mamada';
+    // sugere o lado oposto ao da última mamada no peito
+    let tipo = m ? m.tipo : null;
+    if (!tipo) {
+      const ult = [...dados.mamadas].filter(x => x.tipo !== 'mamadeira').sort((a, b) => b.em - a.em)[0];
+      tipo = ult ? (ult.tipo === 'esq' ? 'dir' : 'esq') : 'esq';
+    }
+    marcarTipo(tipo);
+    $('mHora').value = paraInput(m ? m.em : (agora ? Date.now() : padraoNoDia()));
+    $('mMin').value = m && m.min ? m.min : '';
+    $('mMl').value = m && m.ml ? m.ml : '';
+    $('mObs').value = m ? (m.obs || '') : '';
+    $('mExcluir').classList.toggle('escondido', nova);
+    $('dlgMamada').showModal();
+  }
+  $('formMamada').onsubmit = e => {
+    e.preventDefault();
+    const em = doInput($('mHora').value);
+    if (!em) return;
+    const reg = {
+      tipo: tipoSel,
+      em,
+      min: parseInt($('mMin').value, 10) || null,
+      ml: tipoSel === 'mamadeira' ? (parseInt($('mMl').value, 10) || null) : null,
+      obs: $('mObs').value.trim(),
+    };
+    if (mamadaEditando) Object.assign(mamadaEditando, reg);
+    else dados.mamadas.push({ id: novoId(), ...reg });
+    diaVisto = inicioDoDia(em);
+    $('dlgMamada').close();
+    salvar();
+  };
+  $('mExcluir').onclick = () => {
+    if (!confirm('Excluir esta mamada?')) return;
+    dados.mamadas = dados.mamadas.filter(m => m !== mamadaEditando);
+    $('dlgMamada').close();
+    salvar();
+  };
+  $('btnMamada').onclick = () => abrirMamada(null, true);
+  $('addMamada').onclick = () => abrirMamada(null, false);
+
+  // ---------- backup ----------
+  $('btnBackup').onclick = () => $('dlgBackup').showModal();
+  $('bExportar').onclick = async () => {
+    const d = new Date();
+    const nome = `sonecas-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`;
+    const arquivo = new File([JSON.stringify(dados, null, 1)], nome, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+      try { await navigator.share({ files: [arquivo], title: 'Cópia das sonecas' }); } catch (e) {}
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(arquivo);
+    a.download = nome;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  $('bImportar').onclick = () => $('bArquivo').click();
+  $('bArquivo').onchange = async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      if (!Array.isArray(d.sonecas) || !Array.isArray(d.mamadas)) throw new Error();
+      if (!confirm(`Restaurar a cópia com ${d.sonecas.length} sonecas e ${d.mamadas.length} mamadas? Os registros atuais serão substituídos.`)) return;
+      dados = d;
+      $('dlgBackup').close();
+      salvar();
+    } catch (err) {
+      alert('Este arquivo não é uma cópia válida do app Sonecas.');
+    }
+  };
+
+  // ---------- atualização ----------
+  desenhar();
+  setInterval(() => {
+    desenharEstado();
+    if (sonecaAtiva()) desenharDia();
+  }, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { dados = carregar(); desenhar(); } });
+
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
