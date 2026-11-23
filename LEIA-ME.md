@@ -25,7 +25,7 @@ Pronto: o ícone da lua aparece na tela de início e o app abre em tela cheia, c
   - **🌙 Voltou a dormir**: retoma a contagem. Pode pausar quantas vezes precisar na mesma soneca.
   - **☀️ Acordou de vez**: se ele não voltar a dormir, a soneca termina no horário em que ele despertou, e a próxima soneca é calculada a partir daí.
   - A duração da soneca, o total do dia e o relatório da semana contam **só o sono real**, sem os despertares. A lista mostra quantos despertares houve e quanto tempo duraram. Ao tocar na soneca, dá para apagar os despertares, se tiver sido engano.
-- **🍼 Registrar mamada**: escolha peito esquerdo, direito ou mamadeira. O app já sugere o peito do outro lado da última mamada. Duração, ml e observações são opcionais.
+- **🍼 Registrar mamada**: escolha peito esquerdo, direito ou mamadeira. O app já sugere o peito do outro lado da última mamada. Dá para anotar quantos ml ele mamou em qualquer mamada (peito ou mamadeira); o resumo do dia mostra o total de ml e o relatório da semana mostra a média por dia. Duração, ml e observações são opcionais.
 - **Corrigir ou anotar**: toque em qualquer item da lista para mudar os horários, escrever uma observação (ex.: "dormiu no colo") ou excluir.
 - **Esqueceu de apertar?** Use "+ Soneca esquecida" ou "+ Mamada esquecida".
 - **Dias anteriores**: use as setas ‹ › ao lado de "Hoje".

@@ -76,7 +76,7 @@
   .dia-nav .titulo { text-align: center; }
   .dia-nav .titulo small { display: block; color: var(--muted); font-size: 14px; }
 
-  .resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .resumo { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
   .resumo div { background: var(--bg); border-radius: 14px; padding: 10px 6px; text-align: center; }
   .resumo b { display: block; font-size: 18px; white-space: nowrap; }
   .resumo span { color: var(--muted); font-size: 13px; }
@@ -174,6 +174,7 @@
     <div><b id="rTotal">0min</b><span>de sono</span></div>
     <div><b id="rSonecas">0</b><span>sonecas</span></div>
     <div><b id="rMamadas">0</b><span>mamadas</span></div>
+    <div><b id="rMl">0 ml</b><span>mamados no dia</span></div>
   </div>
   <ul class="lista" id="lista"></ul>
   <div class="vazio escondido" id="vazio">Nada registrado neste dia.</div>
@@ -451,7 +452,7 @@
     }
     const um = [...dados.mamadas].sort((a, b) => b.em - a.em)[0];
     $('ultimaMamada').textContent = um
-      ? `Última mamada: ${hora(um.em)} (há ${duracao(agora - um.em)})`
+      ? `Última mamada: ${hora(um.em)}${um.ml ? ' · ' + um.ml + ' ml' : ''} (há ${duracao(agora - um.em)})`
       : '';
   }
 
@@ -467,6 +468,7 @@
     $('rTotal').textContent = duracao(total);
     $('rSonecas').textContent = sonecas.length;
     $('rMamadas').textContent = mamadas.length;
+    $('rMl').textContent = mamadas.reduce((a, m) => a + (m.ml || 0), 0) + ' ml';
 
     const itens = [
       ...sonecas.map(s => ({ t: s.inicio, tipo: 's', r: s })),
@@ -596,8 +598,7 @@
   function marcarTipo(t) {
     tipoSel = t;
     document.querySelectorAll('#mTipo button').forEach(b => b.classList.toggle('sel', b.dataset.tipo === t));
-    $('mMlBox').style.visibility = t === 'mamadeira' ? 'visible' : 'hidden';
-  }
+      }
   document.querySelectorAll('#mTipo button').forEach(b => b.onclick = () => marcarTipo(b.dataset.tipo));
 
   function abrirMamada(m, agora) {
@@ -626,7 +627,7 @@
       tipo: tipoSel,
       em,
       min: parseInt($('mMin').value, 10) || null,
-      ml: tipoSel === 'mamadeira' ? (parseInt($('mMl').value, 10) || null) : null,
+      ml: parseInt($('mMl').value, 10) || null,
       obs: $('mObs').value.trim(),
     };
     if (mamadaEditando) Object.assign(mamadaEditando, reg);
@@ -762,7 +763,7 @@
       { v: r.maior ? duracao(r.maior.dur) : '—', l: 'soneca mais longa' + (r.maior ? ' (' + CURTOS[new Date(r.maior.dia).getDay()] + ')' : '') },
       { v: um(r.mamadasMedia), l: 'mamadas por dia (média)' },
     ];
-    if (r.nMamadeira) lista.push({ v: r.ml + ' ml', l: `de mamadeira na semana (${r.nMamadeira}x)` });
+    if (r.ml) lista.push({ v: Math.round(r.ml / r.n) + ' ml', l: 'mamados por dia (média)' });
     lista.push({ v: r.n + ' dias', l: r.dias.some(d => d.hoje && d.comDados) && r.n > 0 && !r.dias.every(d => !d.comDados || d.hoje) ? 'completos (hoje fora da média)' : 'com registro' });
     return lista;
   }

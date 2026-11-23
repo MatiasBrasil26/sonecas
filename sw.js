@@ -1,6 +1,6 @@
 // Guarda o app no iPhone para abrir mesmo sem internet.
 // Sempre tenta a versão mais nova primeiro; sem internet, usa a guardada.
-const CACHE = 'sonecas-v4';
+const CACHE = 'sonecas-v5';
 const ARQUIVOS = ['./', 'index.html', 'manifest.json', 'icon-180.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
