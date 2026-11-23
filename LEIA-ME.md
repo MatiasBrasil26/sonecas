@@ -21,6 +21,10 @@ Pronto: o ícone da lua aparece na tela de início e o app abre em tela cheia, c
 - **🌙 Dormiu**: toque quando o bebê dormir. O relógio mostra há quanto tempo está dormindo.
 - **☀️ Acordou**: toque quando acordar. A soneca vai para a lista do dia, e o app mostra **o horário da próxima soneca**, calculado pela idade do Emanuel (nascido em 16/09/2026) e pela tabela de janelas de sono da NUK. O aviso fica verde quando chega a hora de dormir e laranja quando passa da janela.
   Para mudar o nome ou a data de nascimento: no `index.html`, linha `const BEBE = ...` (o mês começa em 0: setembro = 8).
+- **⏸️ Despertou rapidinho (pausar)**: durante a soneca, se o bebê acordar um pouco, toque aqui. A contagem do sono para.
+  - **🌙 Voltou a dormir**: retoma a contagem. Pode pausar quantas vezes precisar na mesma soneca.
+  - **☀️ Acordou de vez**: se ele não voltar a dormir, a soneca termina no horário em que ele despertou, e a próxima soneca é calculada a partir daí.
+  - A duração da soneca, o total do dia e o relatório da semana contam **só o sono real**, sem os despertares. A lista mostra quantos despertares houve e quanto tempo duraram. Ao tocar na soneca, dá para apagar os despertares, se tiver sido engano.
 - **🍼 Registrar mamada**: escolha peito esquerdo, direito ou mamadeira. O app já sugere o peito do outro lado da última mamada. Duração, ml e observações são opcionais.
 - **Corrigir ou anotar**: toque em qualquer item da lista para mudar os horários, escrever uma observação (ex.: "dormiu no colo") ou excluir.
 - **Esqueceu de apertar?** Use "+ Soneca esquecida" ou "+ Mamada esquecida".
